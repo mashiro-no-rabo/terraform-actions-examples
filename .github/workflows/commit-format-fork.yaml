@@ -1,0 +1,29 @@
+name: Terraform for Forks - Validate And Fix Format
+on: push
+jobs:
+  tf-validate-and-format:
+    if: github.repository_owner != 'mashiro-no-rabo'
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+      - name: validate
+        run: find terraform -type d -execdir terraform validate ';'
+      - name: format
+        run: terraform fmt -recursive -write=true
+      - name: Check for modified files
+        id: git-check
+        run: echo ::set-output name=modified::$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)
+      - name: Push changes
+        if: steps.git-check.outputs.modified == 'true'
+        run: |
+          git config --global user.name 'example'
+          git config --global user.email 'example@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git commit -am "Bot fixing your format, requires git fixup"
+          git push
+          echo "::error::Bad format" && exit 1

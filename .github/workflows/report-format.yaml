@@ -1,0 +1,17 @@
+name: Terraform - Validate And Check Format
+on:
+- push
+jobs:
+  tf-validate-and-format:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+      - name: validate
+        run: find terraform -type d -execdir terraform validate ';'
+      - name: format
+        run: terraform fmt -recursive -check
